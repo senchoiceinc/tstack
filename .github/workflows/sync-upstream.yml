@@ -1,0 +1,28 @@
+name: Sync upstream tstack
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: upstream-main-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'senchoiceinc/tstack'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Load the reviewed synchronizer from this workflow commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/contents/.github/scripts/sync_upstream.py?ref=${GITHUB_SHA}" --jq .content | base64 --decode > "${RUNNER_TEMP}/tstack-sync.py"
+          python3 "${RUNNER_TEMP}/tstack-sync.py" --repo "${GITHUB_REPOSITORY}"
